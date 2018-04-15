@@ -1,15 +1,15 @@
 ---
 declared-services:
-  my-watson-assistant-service:
+  conversation-demo:
     label: conversation
     plan: free
 applications:
-- name: watson-assistant-simple
+- name: AdverseSideEffectsChatbot
   command: npm start
   path: .
   memory: 256M
   instances: 1
   services:
-  - my-watson-assistant-service
+  - conversation-demo
   env:
     NPM_CONFIG_PRODUCTION: false
