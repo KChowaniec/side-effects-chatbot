@@ -19,7 +19,7 @@
 var express = require('express'); // app server
 var bodyParser = require('body-parser'); // parser for post requests
 var watson = require('watson-developer-cloud'); // watson sdk
-
+var DiscoveryV1 = require('watson-developer-cloud/discovery/v1');
 var app = express();
 
 // Bootstrap application settings
@@ -36,6 +36,15 @@ var assistant = new watson.AssistantV1({
   version: '2018-02-16'
 });
 
+
+var discovery = new DiscoveryV1({
+  username: process.env.DISCOVERY_USERNAME || '<username>',
+  password: process.env.DISCOVERY_PASSWORD || '<password>',
+  version: 'v1',
+  version_date: '2017-11-07'
+});
+
+
 // Endpoint to be call from the client side
 app.post('/api/message', function(req, res) {
   var workspace = process.env.WORKSPACE_ID || '<workspace-id>';
@@ -46,10 +55,17 @@ app.post('/api/message', function(req, res) {
       }
     });
   }
+  
   var payload = {
     workspace_id: workspace,
     context: req.body.context || {},
     input: req.body.input || {}
+  };
+  
+    payload.context['credentials'] = {
+   'user': process.env.API_USER,
+   'password': process.env.API_PASSWORD
+  
   };
 
   // Send the input to the assistant service
@@ -57,7 +73,9 @@ app.post('/api/message', function(req, res) {
     if (err) {
       return res.status(err.code || 500).json(err);
     }
-    return res.json(updateMessage(payload, data));
+	updateMessage(payload, data, function(response){
+		return res.json(response);
+	});
   });
 });
 
@@ -67,30 +85,15 @@ app.post('/api/message', function(req, res) {
  * @param  {Object} response The response from the Assistant service
  * @return {Object}          The response with the updated message
  */
-function updateMessage(input, response) {
+function updateMessage(input, response, callback) {
   var responseText = null;
   if (!response.output) {
     response.output = {};
-  } else {
-    return response;
+	callback(response);
+	} else {
+		callback(response);
   }
-  if (response.intents && response.intents[0]) {
-    var intent = response.intents[0];
-    // Depending on the confidence of the response the app can return different messages.
-    // The confidence will vary depending on how well the system is trained. The service will always try to assign
-    // a class/intent to the input. If the confidence is low, then it suggests the service is unsure of the
-    // user's intent . In these cases it is usually best to return a disambiguation message
-    // ('I did not understand your intent, please rephrase your question', etc..)
-    if (intent.confidence >= 0.75) {
-      responseText = 'I understood your intent was ' + intent.intent;
-    } else if (intent.confidence >= 0.5) {
-      responseText = 'I think your intent was ' + intent.intent;
-    } else {
-      responseText = 'I did not understand your intent';
-    }
-  }
-  response.output.text = responseText;
-  return response;
 }
+
 
 module.exports = app;

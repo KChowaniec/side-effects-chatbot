@@ -3,6 +3,9 @@ declared-services:
   conversation-demo:
     label: conversation
     plan: free
+  discovery-service:
+    label: discovery
+    plan: lite
 applications:
 - name: AdverseSideEffectsChatbot
   command: npm start
@@ -11,5 +14,6 @@ applications:
   instances: 1
   services:
   - conversation-demo
+  - discovery-service
   env:
     NPM_CONFIG_PRODUCTION: false
